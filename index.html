@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단열 탐구 가상 실험실</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc; /* slate-50 */
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Scrollbar for Table */
+    .table-container::-webkit-scrollbar {
+      height: 8px;
+    }
+    .table-container::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .table-container::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="text-gray-800">
+
+  <div class="min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+      
+      <!-- Header -->
+      <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 flex items-center gap-2">
+            <i data-lucide="thermometer" class="w-8 h-8 text-blue-600"></i>
+            단열재 종류에 따른 보온/보냉 효과 탐구
+          </h1>
+          <p class="text-slate-500 mt-2 font-medium">물리량 조절 가상 실험실</p>
+        </div>
+        <div class="flex gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200">
+          <button id="btnHot" class="px-4 py-2 rounded-md font-bold transition-colors flex items-center gap-2 bg-red-500 text-white shadow">
+            <i data-lucide="thermometer" class="w-4 h-4"></i> 뜨거운 물 (보온)
+          </button>
+          <button id="btnCold" class="px-4 py-2 rounded-md font-bold transition-colors flex items-center gap-2 text-slate-500 hover:bg-white">
+            <i data-lucide="droplets" class="w-4 h-4"></i> 차가운 물 (보냉)
+          </button>
+        </div>
+      </header>
+
+      <!-- Info Section -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-start gap-4 text-slate-700">
+        <div class="bg-blue-100 p-2 rounded-full shrink-0 mt-1">
+          <i data-lucide="info" class="w-6 h-6 text-blue-600"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-extrabold text-slate-800 mb-1">단열(Insulation)이란?</h2>
+          <p class="leading-relaxed">
+            물체와 물체 사이에 열이 이동하는 것을 막는 현상을 말합니다. 단열이 잘 될수록 열의 이동이 적어 뜨거운 것은 오랫동안 뜨겁게(보온), 차가운 것은 오랫동안 차갑게(보냉) 유지할 수 있습니다. 아래 가상 실험을 통해 다양한 재료의 단열 성능을 비교해 보세요.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        
+        <!-- Left Panel -->
+        <div class="xl:col-span-4 space-y-6">
+          
+          <!-- Timer Controls -->
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-col items-center justify-center space-y-4">
+              <h3 class="text-slate-500 font-bold text-sm">실험 진행 시간</h3>
+              <div class="text-5xl text-slate-800 font-mono font-bold tracking-tight">
+                <span id="currentTimeDisplay">0</span> <span class="text-xl text-slate-400">/ <span id="maxTimeDisplay">10</span>분</span>
+              </div>
+              <div class="flex gap-4 pt-2 w-full justify-center" id="controlButtons">
+                <button id="btnStart" class="flex-1 max-w-[120px] flex items-center justify-center gap-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-md transition-all hover:-translate-y-0.5 font-bold">
+                  <i data-lucide="play" class="w-5 h-5 fill-current"></i> 시작
+                </button>
+                <button id="btnStop" class="flex-1 max-w-[120px] flex items-center justify-center gap-2 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-md transition-all hover:-translate-y-0.5 font-bold hidden">
+                  <i data-lucide="square" class="w-5 h-5 fill-current"></i> 정지
+                </button>
+                <button id="btnReset" class="flex-1 max-w-[120px] flex items-center justify-center gap-2 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-xl shadow-md transition-all hover:-translate-y-0.5 font-bold">
+                  <i data-lucide="rotate-ccw" class="w-5 h-5"></i> 초기화
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Panel -->
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="flex items-center gap-2 font-bold text-lg mb-4 text-slate-800 border-b pb-2">
+              <i data-lucide="settings-2" class="w-5 h-5 text-slate-500"></i>
+              초기 조건 설정
+            </h3>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-500">실내 온도 (°C)</label>
+                <input type="number" id="inputRoomTemp" value="20" class="w-full p-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 font-mono" />
+              </div>
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-500">실험 시간 (분)</label>
+                <input type="number" id="inputMaxTime" value="10" class="w-full p-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 font-mono" />
+              </div>
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-500">뜨거운 물 온도 (°C)</label>
+                <input type="number" id="inputHotTemp" value="80" class="w-full p-2 border border-slate-300 rounded-lg bg-red-50 text-red-900 focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-60 font-mono" />
+              </div>
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-500">차가운 물 온도 (°C)</label>
+                <input type="number" id="inputColdTemp" value="5" disabled class="w-full p-2 border border-slate-300 rounded-lg bg-blue-50 text-blue-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 font-mono opacity-60" />
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-4 leading-relaxed">
+              * 조건 변경은 실험이 초기화(정지)된 상태에서만 가능합니다.
+            </p>
+          </div>
+
+          <div class="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm flex gap-3 border border-blue-100">
+            <i data-lucide="info" class="w-5 h-5 shrink-0 mt-0.5"></i>
+            <p>온도 차이가 클수록 온도가 빠르게 변하는 <strong>뉴턴의 냉각 법칙</strong>이 시뮬레이션에 적용되어 있습니다. 실내 온도와 물의 온도를 변경하여 단열 효과의 차이를 비교해 보세요.</p>
+          </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="xl:col-span-8 space-y-6">
+          
+          <!-- Thermometers -->
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-center text-sm font-bold text-slate-500 mb-6 border-b pb-2 inline-block w-full">실시간 내부 온도 현황</h3>
+            <div id="thermometerContainer" class="grid grid-cols-2 sm:grid-cols-5 gap-y-12 gap-x-4 justify-items-center items-end py-2 pt-8">
+              <!-- Dynamically generated via JS -->
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold mb-4 text-slate-800">시간에 따른 온도 변화 그래프</h2>
+            <div class="h-72 w-full relative">
+              <canvas id="temperatureChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto table-container">
+            <h2 class="text-lg font-bold mb-4 text-slate-800 flex items-center justify-between">
+              측정 결과 표 <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-1 rounded-md">스크롤하여 확인하세요</span>
+            </h2>
+            <table class="w-full min-w-[700px] border-collapse text-center text-sm">
+              <thead id="tableHead" class="bg-slate-50 border-y-2 border-slate-300 text-slate-700">
+                <!-- Dynamically generated via JS -->
+              </thead>
+              <tbody id="tableBody">
+                <!-- Dynamically generated via JS -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    const MATERIALS = [
+      { id: 'none', name: '단열재 없음', color: '#94a3b8', k: 0.016, icon: '🫙', desc: '외부 공기와 직접 접촉' },
+      { id: 'newspaper', name: '신문지', color: '#fbbf24', k: 0.0145, icon: '📰', desc: '종이 사이의 미세한 공기층' },
+      { id: 'straw', name: '빨대', color: '#f472b6', k: 0.006, icon: '🥤', desc: '빨대 내부의 밀폐된 두꺼운 공기층' },
+      { id: 'bubble', name: '뽁뽁이', color: '#38bdf8', k: 0.011, icon: '🫧', desc: '비닐 캡슐 안의 공기' },
+      { id: 'cotton', name: '솜', color: '#a78bfa', k: 0.012, icon: '☁️', desc: '섬유 사이의 많은 공기층' },
+    ];
+
+    // State Variables
+    let state = {
+      experimentType: 'hot', // 'hot' or 'cold'
+      status: 'idle', // 'idle', 'running', 'finished'
+      currentTime: 0,
+      roomTemp: 20,
+      hotWaterStart: 80,
+      coldWaterStart: 5,
+      maxTime: 10,
+      chartData: [],
+      winnerId: null
+    };
+
+    let timerInterval = null;
+    let chartInstance = null;
+
+    // DOM Elements
+    const elements = {
+      btnHot: document.getElementById('btnHot'),
+      btnCold: document.getElementById('btnCold'),
+      btnStart: document.getElementById('btnStart'),
+      btnStop: document.getElementById('btnStop'),
+      btnReset: document.getElementById('btnReset'),
+      inputRoomTemp: document.getElementById('inputRoomTemp'),
+      inputMaxTime: document.getElementById('inputMaxTime'),
+      inputHotTemp: document.getElementById('inputHotTemp'),
+      inputColdTemp: document.getElementById('inputColdTemp'),
+      currentTimeDisplay: document.getElementById('currentTimeDisplay'),
+      maxTimeDisplay: document.getElementById('maxTimeDisplay'),
+      thermometerContainer: document.getElementById('thermometerContainer'),
+      tableHead: document.getElementById('tableHead'),
+      tableBody: document.getElementById('tableBody')
+    };
+
+    function getInitialTemp() {
+      return state.experimentType === 'hot' ? state.hotWaterStart : state.coldWaterStart;
+    }
+
+    function calculateTemperature(t, k) {
+      const initialTemp = getInitialTemp();
+      const temp = state.roomTemp + (initialTemp - state.roomTemp) * Math.exp(-k * t);
+      return parseFloat(temp.toFixed(1));
+    }
+
+    function generateDataUpTo(time) {
+      const newData = [];
+      for (let t = 0; t <= time; t++) {
+        const dataPoint = { time: t };
+        MATERIALS.forEach(m => {
+          dataPoint[m.id] = calculateTemperature(t, m.k);
+        });
+        newData.push(dataPoint);
+      }
+      state.chartData = newData;
+    }
+
+    function calculateWinner() {
+      if (state.status !== 'finished' || state.chartData.length === 0) return null;
+      const initialTemp = getInitialTemp();
+      const lastData = state.chartData[state.chartData.length - 1];
+      let bestId = null;
+      let minDiff = Infinity;
+
+      MATERIALS.forEach(m => {
+        const diff = Math.abs(initialTemp - lastData[m.id]);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestId = m.id;
+        }
+      });
+      return bestId;
+    }
+
+    function renderThermometers() {
+      const currentData = state.chartData[state.currentTime] || {};
+      const isHot = state.experimentType === 'hot';
+      const maxScale = Math.max(100, state.hotWaterStart + 10);
+      const minScale = Math.min(0, state.coldWaterStart - 10);
+      const range = maxScale - minScale;
+      const colorClass = isHot ? 'bg-red-500' : 'bg-blue-500';
+
+      let html = '';
+      MATERIALS.forEach(m => {
+        const currentTemp = currentData[m.id] !== undefined ? currentData[m.id] : getInitialTemp();
+        const fillPercent = Math.max(0, Math.min(100, ((currentTemp - minScale) / range) * 100));
+        const isWinner = state.winnerId === m.id;
+
+        html += `
+          <div class="flex flex-col items-center justify-end h-full relative">
+            ${isWinner ? `<div class="absolute -top-10 text-4xl animate-bounce z-30 drop-shadow-lg" title="가장 단열이 잘 된 재질입니다!">🥇</div>` : ''}
+            <div class="text-2xl mb-2" title="${m.desc}">${m.icon}</div>
+            
+            <div class="flex flex-col items-center">
+              <div class="w-5 h-32 bg-slate-100 rounded-t-full relative z-10 border-2 border-slate-300 border-b-0 overflow-hidden shadow-inner flex flex-col justify-end">
+                <div class="w-full transition-all duration-1000 ease-linear ${colorClass} opacity-80" style="height: ${fillPercent}%"></div>
+                <div class="absolute inset-0 flex flex-col justify-between py-2 pointer-events-none opacity-20">
+                  <div class="w-2 h-px bg-black"></div><div class="w-2 h-px bg-black"></div>
+                  <div class="w-2 h-px bg-black"></div><div class="w-2 h-px bg-black"></div>
+                </div>
+              </div>
+              <div class="w-10 h-10 rounded-full z-20 -mt-3 border-2 border-slate-300 shadow-md ${colorClass} bg-opacity-90 flex items-center justify-center">
+                 <div class="w-3 h-3 bg-white rounded-full opacity-30 absolute ml-2 mb-2"></div>
+              </div>
+            </div>
+
+            <div class="mt-3 text-sm font-bold text-gray-700 whitespace-nowrap">${m.name}</div>
+            <div class="text-lg font-mono font-extrabold mt-1 text-slate-800">
+              ${currentTemp !== undefined ? currentTemp + '°C' : '-'}
+            </div>
+          </div>
+        `;
+      });
+      elements.thermometerContainer.innerHTML = html;
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('temperatureChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#1e293b',
+              bodyColor: '#334155',
+              borderColor: '#e2e8f0',
+              borderWidth: 1,
+              callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y + '°C'; } }
+            },
+            annotation: { /* Room Temp Reference Line (Complex in basic chartjs without plugin, so handled via y-axis grid or just description) */ }
+          },
+          scales: {
+            x: { title: { display: true, text: '시간 (분)' }, grid: { display: false } },
+            y: { title: { display: true, text: '온도 (°C)' } }
+          },
+          animation: { duration: 500 }
+        }
+      });
+    }
+
+    function updateChart() {
+      if (!chartInstance) initChart();
+      
+      const labels = state.chartData.map(d => d.time);
+      const datasets = MATERIALS.map(m => ({
+        label: m.name,
+        data: state.chartData.map(d => d[m.id]),
+        borderColor: m.color,
+        backgroundColor: m.color,
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.1
+      }));
+
+      chartInstance.data.labels = labels;
+      chartInstance.data.datasets = datasets;
+      // Update max X axis dynamically based on maxTime
+      chartInstance.options.scales.x.max = state.maxTime; 
+      chartInstance.update();
+    }
+
+    function updateTable() {
+      // Header
+      let theadHtml = '<tr><th class="py-3 px-4 border-r border-slate-200 font-bold w-32 sticky left-0 bg-slate-50">구분 \\ 시간</th>';
+      for (let t = 0; t <= state.maxTime; t++) {
+        theadHtml += `<th class="py-3 px-2 font-bold">${t}분</th>`;
+      }
+      theadHtml += '</tr>';
+      elements.tableHead.innerHTML = headHtml = theadHtml;
+
+      // Body
+      let tbodyHtml = '';
+      MATERIALS.forEach((m, index) => {
+        const bgClass = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+        tbodyHtml += `<tr class="${bgClass} hover:bg-slate-100 transition-colors">`;
+        tbodyHtml += `<td class="py-2.5 px-4 border-r border-slate-200 font-bold text-left flex items-center gap-2 border-b sticky left-0 bg-inherit">
+                        <span style="background-color: ${m.color}" class="w-3 h-3 rounded-full inline-block shadow-sm"></span>
+                        ${m.name}
+                      </td>`;
+        for (let t = 0; t <= state.maxTime; t++) {
+          const val = state.chartData[t] ? state.chartData[t][m.id] : '-';
+          tbodyHtml += `<td class="py-2.5 px-2 border-b border-slate-100 text-slate-600 font-mono">${val}</td>`;
+        }
+        tbodyHtml += '</tr>';
+      });
+      elements.tableBody.innerHTML = tbodyHtml;
+    }
+
+    function updateUI() {
+      // Buttons styling based on experiment type
+      if (state.experimentType === 'hot') {
+        elements.btnHot.className = "px-4 py-2 rounded-md font-bold transition-colors flex items-center gap-2 bg-red-500 text-white shadow";
+        elements.btnCold.className = "px-4 py-2 rounded-md font-bold transition-colors flex items-center gap-2 text-slate-500 hover:bg-white";
+        elements.inputHotTemp.disabled = state.status !== 'idle';
+        elements.inputColdTemp.disabled = true;
+        elements.inputHotTemp.classList.remove('opacity-60');
+        elements.inputColdTemp.classList.add('opacity-60');
+      } else {
+        elements.btnHot.className = "px-4 py-2 rounded-md font-bold transition-colors flex items-center gap-2 text-slate-500 hover:bg-white";
+        elements.btnCold.className = "px-4 py-2 rounded-md font-bold transition-colors flex items-center gap-2 bg-blue-500 text-white shadow";
+        elements.inputHotTemp.disabled = true;
+        elements.inputColdTemp.disabled = state.status !== 'idle';
+        elements.inputHotTemp.classList.add('opacity-60');
+        elements.inputColdTemp.classList.remove('opacity-60');
+      }
+
+      // Input disabling based on status
+      const isIdle = state.status === 'idle';
+      elements.inputRoomTemp.disabled = !isIdle;
+      elements.inputMaxTime.disabled = !isIdle;
+      elements.btnHot.disabled = !isIdle;
+      elements.btnCold.disabled = !isIdle;
+      if(!isIdle) {
+         elements.btnHot.classList.toggle('opacity-50', true);
+         elements.btnCold.classList.toggle('opacity-50', true);
+      } else {
+         elements.btnHot.classList.toggle('opacity-50', false);
+         elements.btnCold.classList.toggle('opacity-50', false);
+      }
+
+      // Controls visibility
+      if (state.status === 'idle' || state.status === 'finished') {
+        elements.btnStart.classList.toggle('hidden', state.status !== 'idle');
+        elements.btnStop.classList.toggle('hidden', true);
+      } else if (state.status === 'running') {
+        elements.btnStart.classList.toggle('hidden', true);
+        elements.btnStop.classList.toggle('hidden', false);
+      }
+
+      // Texts
+      elements.currentTimeDisplay.textContent = state.currentTime;
+      elements.maxTimeDisplay.textContent = state.maxTime;
+
+      renderThermometers();
+      updateChart();
+      updateTable();
+    }
+
+    function readInputs() {
+      state.roomTemp = Number(elements.inputRoomTemp.value) || 20;
+      state.maxTime = Number(elements.inputMaxTime.value) || 10;
+      state.hotWaterStart = Number(elements.inputHotTemp.value) || 80;
+      state.coldWaterStart = Number(elements.inputColdTemp.value) || 5;
+    }
+
+    function resetSimulation() {
+      clearInterval(timerInterval);
+      readInputs();
+      state.status = 'idle';
+      state.currentTime = 0;
+      state.winnerId = null;
+      generateDataUpTo(0);
+      updateUI();
+    }
+
+    elements.btnStart.addEventListener('click', () => {
+      readInputs();
+      state.status = 'running';
+      state.winnerId = null;
+      updateUI();
+      
+      timerInterval = setInterval(() => {
+        state.currentTime++;
+        generateDataUpTo(state.currentTime);
+        
+        if (state.currentTime >= state.maxTime) {
+          clearInterval(timerInterval);
+          state.status = 'finished';
+          state.winnerId = calculateWinner();
+        }
+        updateUI();
+      }, 1000);
+    });
+
+    elements.btnStop.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      state.status = 'finished';
+      state.winnerId = calculateWinner();
+      updateUI();
+    });
+
+    elements.btnReset.addEventListener('click', resetSimulation);
+
+    elements.btnHot.addEventListener('click', () => {
+      if (state.status === 'idle') {
+        state.experimentType = 'hot';
+        resetSimulation();
+      }
+    });
+
+    elements.btnCold.addEventListener('click', () => {
+      if (state.status === 'idle') {
+        state.experimentType = 'cold';
+        resetSimulation();
+      }
+    });
+
+    // Handle Input Changes dynamically in idle state
+    [elements.inputRoomTemp, elements.inputMaxTime, elements.inputHotTemp, elements.inputColdTemp].forEach(input => {
+      input.addEventListener('change', () => {
+        if (state.status === 'idle') resetSimulation();
+      });
+    });
+
+    // Initial Setup
+    window.onload = () => {
+      resetSimulation();
+    };
+  </script>
+</body>
+</html>
